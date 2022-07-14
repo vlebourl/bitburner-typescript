@@ -2,6 +2,3 @@ node_modules/
 dist/
 .vscode/
 bitburner-sync.json
-.eslintrc.js
-package-lock.json
-yarn.lock

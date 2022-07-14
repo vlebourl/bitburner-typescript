@@ -34,7 +34,7 @@ module.exports = {
     "max-len": "off",
     "@typescript-eslint/lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }],
     "@typescript-eslint/explicit-function-return-type": ["error", { "allowExpressions": true }],
-    "linebreak-style": ["error", "windows"]
+    "linebreak-style": ["error", "unix"]
   },
   "settings": {
     "import/parsers": {
