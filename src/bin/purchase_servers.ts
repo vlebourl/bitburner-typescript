@@ -8,10 +8,10 @@ function buyServer(ns: NS, name: string, ram: number): string {
 }
 
 function killHomeScripts(ns: NS): string[] {
-  ns.printf('[*] Killing home scripts');
   const toStart: string[] = [];
   for (const script of ['/scripts/boost_hack.js', '/scripts/get_money.js']) {
     if (ns.getRunningScript(script, 'home')) {
+      ns.printf(`[*] Killing ${script}`);
       ns.kill(script, 'home');
       toStart.push(script);
     }
@@ -43,11 +43,11 @@ export async function main(ns : NS) : Promise<void> {
         const server = serversPurchased[i];
         if (server.logRam < ram && ns.getPurchasedServerCost(2 ** ram) < ns.getServerMoneyAvailable('home')) {
           // ns.printf('... Server upgrade possible');
-          ns.killall(server.hostname);
           // ns.printf(`[*] Removing server ${server.hostname}`);
           const toStart = killHomeScripts(ns);
+          ns.killall(server.hostname);
           ns.deleteServer(server.hostname);
-          const newServer = buyServer(ns, server.hostname, ram);
+          const newServer = buyServer(ns, generateRandomString(), ram);
           restartHomeScript(ns, toStart);
           del += 1;
           if (newServer !== '') {
