@@ -1,12 +1,29 @@
 import { NS } from '@ns';
 import { getServersInfos, generateRandomString } from '/compiler/utilities';
 
-function buyServer(ns: NS, ram: number): string {
-  ns.disableLog('purchaseServer');
-  const serverName = generateRandomString();
-  ns.printf(`[*] Purchasing server ${serverName} with ${2 ** ram} MB RAM`);
-  const server = ns.purchaseServer(serverName, 2 ** ram);
+function buyServer(ns: NS, name: string, ram: number): string {
+  ns.printf(`[*] Purchasing server ${name} with ${2 ** ram} MB RAM`);
+  const server = ns.purchaseServer(name, 2 ** ram);
   return server;
+}
+
+function killHomeScripts(ns: NS): string[] {
+  ns.printf('[*] Killing home scripts');
+  const toStart: string[] = [];
+  for (const script of ['/scripts/boost_hack.js', '/scripts/get_money.js']) {
+    if (ns.getRunningScript(script, 'home')) {
+      ns.kill(script, 'home');
+      toStart.push(script);
+    }
+  }
+  return toStart;
+}
+
+function restartHomeScript(ns: NS, toStart: string[]): void {
+  for (const script of toStart) {
+    ns.printf(`[*] Restarting ${script}`);
+    ns.exec(script, 'home', 1);
+  }
 }
 
 export async function main(ns : NS) : Promise<void> {
@@ -28,9 +45,11 @@ export async function main(ns : NS) : Promise<void> {
           // ns.printf('... Server upgrade possible');
           ns.killall(server.hostname);
           // ns.printf(`[*] Removing server ${server.hostname}`);
+          const toStart = killHomeScripts(ns);
           ns.deleteServer(server.hostname);
+          const newServer = buyServer(ns, server.hostname, ram);
+          restartHomeScript(ns, toStart);
           del += 1;
-          const newServer = buyServer(ns, ram);
           if (newServer !== '') {
             bought += 1;
           } else {
@@ -45,7 +64,7 @@ export async function main(ns : NS) : Promise<void> {
         }
       } else if (ns.getPurchasedServerCost(2 ** ram) < ns.getServerMoneyAvailable('home')) {
         // ns.printf('... Server upgrade possible');
-        const newServer = buyServer(ns, ram);
+        const newServer = buyServer(ns, generateRandomString(), ram);
         if (newServer !== '') {
           bought += 1;
         } else {
@@ -63,7 +82,6 @@ export async function main(ns : NS) : Promise<void> {
     ns.printf(`[+] Deleted ${del} servers`);
     ns.printf(`[*] Kept ${kept} servers`);
     ns.printf(`[*] Bought ${bought} servers`);
-
     await ns.sleep(60000);
   }
 }
