@@ -2,16 +2,14 @@ import { NS } from '@ns';
 import { getServersInfos } from '/compiler/utilities';
 
 export async function main(ns: NS): Promise<void> {
-  ns.disableLog('sleep');
-  const serversData = getServersInfos(ns);
-
-  for (const server of serversData) {
-    await ns.scp(['/bin/loop/grow.js', '/bin/loop/weaken.js', '/bin/loop/hack.js'], 'home', server.hostname);
-    await ns.sleep(10);
-  }
-
+  ns.disableLog('ALL');
   while (true) {
+    const serversData = getServersInfos(ns);
     for (const server of serversData) {
+      if (!ns.fileExists('/bin/loop/grow.js', server.hostname)) {
+        await ns.scp(['/bin/loop/grow.js', '/bin/loop/weaken.js', '/bin/loop/hack.js'], 'home', server.hostname);
+        await ns.sleep(10);
+      }
       if (server.admin) {
         const moneyThreshold = server.money.max * 0.75;
         const securityThreshold = server.security.min + 5;
@@ -30,6 +28,12 @@ export async function main(ns: NS): Promise<void> {
         server.penetrate();
       }
       await ns.sleep(1);
+    }
+    if (ns.getHackingLevel() >= 2500) {
+      ns.printf('[+] Hacking level is high enough, exiting');
+      ns.kill('/scripts/boost_hack.js', 'home');
+      ns.run('/scripts/get_money.js', 1);
+      return;
     }
   }
 }
