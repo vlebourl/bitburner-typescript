@@ -3,20 +3,21 @@ import { ServerInfo } from '/lib/server';
 import { getServersInfos, findBestServerToHack } from '/compiler/utilities';
 
 export async function main(ns: NS): Promise<void> {
-  ns.disableLog('sleep');
-  const serversData = getServersInfos(ns);
-  const target: ServerInfo = new ServerInfo(ns, findBestServerToHack(ns));
-
-  for (const server of serversData) {
-    await ns.scp(['/bin/loop/grow.js', '/bin/loop/weaken.js', '/bin/loop/hack.js'], 'home', server.hostname);
-    await ns.sleep(10);
-  }
-
-  const moneyThreshold = target.money.max * 0.75;
-  const securityThreshold = target.security.min + 5;
+  ns.disableLog('ALL');
 
   while (true) {
+    const serversData = getServersInfos(ns);
+    const target: ServerInfo = new ServerInfo(ns, findBestServerToHack(ns));
+    const moneyThreshold = target.money.max * 0.75;
+    const securityThreshold = target.security.min + 5;
+
+    ns.printf(`[+] Target server: ${target.hostname}`);
+
     for (const server of serversData) {
+      if (!ns.fileExists('/bin/loop/grow.js', server.hostname)) {
+        await ns.scp(['/bin/loop/grow.js', '/bin/loop/weaken.js', '/bin/loop/hack.js'], 'home', server.hostname);
+        await ns.sleep(10);
+      }
       if (server.admin && target.admin) {
         let targetMoney = target.money.available;
         if (targetMoney <= 0) targetMoney = 1;
@@ -25,6 +26,8 @@ export async function main(ns: NS): Promise<void> {
         let hackThreads = Math.ceil(ns.hackAnalyzeThreads(target.hostname, targetMoney));
         let growThreads = Math.ceil(ns.growthAnalyze(target.hostname, target.money.max / targetMoney));
         let availableThreads = server.calculateThreadCount(1.75);
+
+        ns.printf(`[+] ${server.hostname} has ${availableThreads} threads`);
 
         const canHack = ns.getHackingLevel() >= server.hackLevel;
 
@@ -42,7 +45,6 @@ export async function main(ns: NS): Promise<void> {
       } else {
         server.penetrate();
       }
-
       await ns.sleep(1);
     }
   }
